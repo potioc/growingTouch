@@ -2,18 +2,56 @@ import fr.inria.papart.multitouch.*;
 
 public class MyApp  extends PaperTouchScreen {
     
-    Grid g;
+    Grid grid;
   
     void setup() {
 	setDrawingSize(400, 360);
 	loadMarkerBoard(sketchPath + "/data/A3-small1.cfg", 297, 210);
-        g = new Grid(400, 360);
-        frameRate(10);
+
+        Player p1 = new Player();
+        Player p2 = new Player();
+        Player p3 = new Player();
+        Player p4 = new Player();
+        currentPlayer = p1;
+
+        grid = new Grid(400, 360);
+        frameRate(20);
     }
     
     void update()
     {
-      g.generate(touchList);
+      grid.update(playerList);
+    }
+    
+    int NEW_TOUCH = -1;
+    
+    void checkTouch()
+    {
+      TouchList touch2D = touchList.get2DTouchs();
+      for (Touch t : touch2D) {
+    
+        // draw the touch. 
+        PVector p = t.position;
+    
+        // draw the elements of the Touch
+    
+        TouchPoint tp = t.touchPoint;
+        if(tp == null){
+          println("TouchPoint null, this method only works with KinectTouchInput.");
+          continue;
+        }
+    
+        if(tp.attachedValue == NEW_TOUCH){
+          fill(200);
+          ellipse(p.x, p.y, 10, 10);
+    
+          if(tp.getAge(millis()) > 1000){
+            if(currentPlayer.tryAddToken(p)){
+              tp.attachedValue = currentPlayer.id;
+            }
+          }
+        }
+      }
     }
     
     void draw() {
@@ -26,29 +64,17 @@ public class MyApp  extends PaperTouchScreen {
 	
 	for(Touch touch : touchList){
 	    fill(touch.id, 100, 100);
-            println(touch.id);
+            //println(touch.id);
 	    ellipse(touch.position.x, touch.position.y, 5, 5);
 	}
         
-        update();
-        displayGrid();
+        grid.update(playerList);
+        grid.display(getGraphics());
+        
+        checkTouch();
 	
 	endDraw();
         
-    }
-    
-    void displayGrid()
-    {
-      for ( int i = 0; i < g.columns;i++) {
-        for ( int j = 0; j < g.rows;j++) {
-          Cell c = g.board[i][j];
-          if (c.state == 0) fill(255,0,0);
-          else if (c.state == 1) fill(0,0,255);
-          else if (c.state == -1) fill(255);
-          stroke(0);
-          rect(c.x, c.y, c.w, c.w);
-        }
-      }
     }
 }
 

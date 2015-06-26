@@ -1,41 +1,53 @@
-public class Cell {
+public class Cell extends PVector{
 
-  public float x, y;
-  public float w;
+  public float size;
 
   public int state;// 0  joueur 1 et 1 joueur 2 et -1 pour rien
   public int distance; // si la cell est en état 1 ou 2, la distance correspond à la distance entre la cell et le touch le plus proche
 
-  public int oldState;
-  public int oldDistance;
+  public int lastState;
+  public int lastDistance;
   
-  Cell(float x_, float y_, float w_) {
-    x = x_;
-    y = y_;
-    w = w_;
+  Cell(float x, float y, float size) {
+    this.x = x;
+    this.y = y;
+    this.size = size;
     
     state = -1;
     distance = 1000;
-    oldState = state;
-    oldDistance = distance;
+    lastState = state;
+    lastDistance = distance;
   }
 
-  void newState(int s) {
+  void setState(int s) {
     state = s;
   }
   
   void setPrevious()
   {
-    oldState = state;
-    oldDistance = distance;
+    lastState = state;
+    lastDistance = distance;
   }
 
-  /*void display() {
-    if (previous == 0 && state == 1) fill(0,0,255);
-    else if (state == 1) fill(0);
-    else if (previous == 1 && state == 0) fill(255,0,0);
-    else fill(255); 
-    stroke(0);
-    rect(x, y, w, w);
-  }*/
+  void display(PGraphics g) {
+        g.fill(getColor());
+        //g.stroke(0);
+        noStroke();
+        g.rect(x, y, size, size);
+  }
+  
+  int getColor()
+  {
+    if ( state == 0 )
+      return #FFCA08;
+    if ( state == 1 )
+      return #5C86FB;
+    if ( state == 2 )
+      return #FF0000;
+    if ( state == 3 )
+      return #5CFB5E;
+    if ( state == -1 )
+      return #FFFFFF;
+    return #FFCA08;
+  }
 }

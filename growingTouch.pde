@@ -17,3 +17,11 @@ public void setup(){
 void draw(){
 
 }
+
+void keyPressed()
+{
+  if ( key == 'n' )
+  {
+    nextPlayer();
+  }
+}

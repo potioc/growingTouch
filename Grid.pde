@@ -1,23 +1,23 @@
 class Grid {
 
-  public int w = 8;
+  public int cellSize = 8;
   public int columns, rows;
 
   // Game of life board
   public Cell[][] board;
 
-  Grid( int _w, int _h ) {
+  Grid( int w, int h ) {
     // Initialize rows, columns and set-up arrays
-    columns = _w/w;
-    rows = _h/w;
+    columns = w/cellSize;
+    rows = h/cellSize;
     board = new Cell[columns][rows];
-    init();
+    initCells();
   }
 
-  void init() {
+  void initCells() {
     for (int i = 0; i < columns; i++) {
       for (int j = 0; j < rows; j++) {
-        board[i][j] = new Cell(i*w, j*w, w);
+        board[i][j] = new Cell(i*cellSize, j*cellSize, cellSize);
       }
     }
   }
@@ -26,33 +26,51 @@ class Grid {
   {
     // PVector.x columns & PVector.y rows
     PVector result = new PVector();
-    result.x = w/8;
-    result.y = h/8;
+    result.x = w/cellSize;
+    result.y = h/cellSize;
     return result;
   }
 
-  // The process of creating the new generation
-  void generate(TouchList tList) 
+  void boardSavePreviousStates()
   {
     for (int x = 0; x < columns; x++) {
       for (int y = 0; y < rows; y++) {
         board[x][y].setPrevious();
       }
     }
-    
-    
-    // on regarde s'il y a eu une nouvelle input, si oui on place    
-    for (Touch t : tList)
+  }
+
+  boolean isInTheGrid(PVector touchInput)
+  {
+    return touchInput.x > -1 && touchInput.x < columns && touchInput.y > -1 && touchInput.y < rows;
+  }
+  
+
+  void placeEveryTowersOnTheGrid()
+  {
+    for( int i = 0; i < playerList.size(); i++ )
     {
-      PVector touchInput = pixelToCell((int)t.position.x, (int)t.position.y);
-      if ( touchInput.x > -1 && touchInput.x < columns && touchInput.y > -1 && touchInput.y < rows )
-      {  
-        Cell tmp = board[(int)touchInput.x][(int)touchInput.y];
-        tmp.oldState = t.id%2;
-        tmp.oldDistance = 0;
+      ArrayList<Tower> towers = playerList.get(i).towers;
+      for ( int j = 0; j < towers.size(); j++ )
+      {
+        PVector touchInput = pixelToCell((int)towers.get(j).pos.x, (int)towers.get(j).pos.y);
+        if ( isInTheGrid(touchInput) )
+        {  
+          Cell tmp = board[(int)touchInput.x][(int)touchInput.y];
+          tmp.lastState = playerList.get(i).id;
+          tmp.lastDistance = 0;
+        }
       }
     }
-
+  }
+  
+  boolean compareNeighbor(int min, Cell[][] board, int x, int y)
+  {
+    return min > board[x][y].lastDistance;
+  }
+  
+  void computeNextStates()
+  {
     int min = 999;
     int stateMin = -1;
     // Loop through every spot in our 2D array and check spots neighbors
@@ -61,43 +79,78 @@ class Grid {
         // regarde à gauche
         if ( x > 0 )
         {
-          if ( min > board[x-1][y].oldDistance )
+          if ( compareNeighbor(min, board, x-1, y) )
           {
-            min = board[x-1][y].oldDistance;
-            stateMin = board[x-1][y].oldState;
+            min = board[x-1][y].lastDistance;
+            stateMin = board[x-1][y].lastState;
+          }
+          
+          if ( y < rows - 1 )
+          {
+            if ( compareNeighbor(min, board, x-1, y+1) )
+            {
+              min = board[x-1][y+1].lastDistance;
+              stateMin = board[x-1][y+1].lastState;
+            }
+          }
+          
+          if ( y > 0 )
+          {
+            if ( compareNeighbor(min, board, x-1, y-1) )
+            {
+              min = board[x-1][y-1].lastDistance;
+              stateMin = board[x-1][y-1].lastState;
+            }
           }
         }
         // regarde à droite
         if ( x < columns - 1 )
         {
-          if ( min > board[x+1][y].oldDistance )
+          if ( min > board[x+1][y].lastDistance )
           {
-            min = board[x+1][y].oldDistance;
-            stateMin = board[x+1][y].oldState;
+            min = board[x+1][y].lastDistance;
+            stateMin = board[x+1][y].lastState;
+          }
+          if ( y < rows - 1 )
+          {
+            if ( compareNeighbor(min, board, x+1, y+1) )
+            {
+              min = board[x+1][y+1].lastDistance;
+              stateMin = board[x+1][y+1].lastState;
+            }
+          }
+          
+          if ( y > 0 )
+          {
+            if ( compareNeighbor(min, board, x+1, y-1) )
+            {
+              min = board[x+1][y-1].lastDistance;
+              stateMin = board[x+1][y-1].lastState;
+            }
           }
         }
         // regarde en haut
         if ( y > 0 )
         {
-          if ( min > board[x][y-1].oldDistance )
+          if ( min > board[x][y-1].lastDistance )
           {
-            min = board[x][y-1].oldDistance;
-            stateMin = board[x][y-1].oldState;
+            min = board[x][y-1].lastDistance;
+            stateMin = board[x][y-1].lastState;
           }
         }
         // regarde en bas
         if ( y < rows - 1 )
         {
-          if ( min > board[x][y+1].oldDistance )
+          if ( min > board[x][y+1].lastDistance )
           {
-            min = board[x][y+1].oldDistance;
-            stateMin = board[x][y+1].oldState;
+            min = board[x][y+1].lastDistance;
+            stateMin = board[x][y+1].lastState;
           }
         }
         
         // set les nouvelles valeurs
         board[x][y].distance = min + 1;
-        board[x][y].state = stateMin;
+        board[x][y].setState(stateMin);
         
         // remet les variables à zéro
         min = 999;
@@ -105,14 +158,23 @@ class Grid {
       }
     }
   }
+  
+  // The process of creating the new generation
+  void update(ArrayList<Player> playerList) 
+  { 
+    boardSavePreviousStates();
+    placeEveryTowersOnTheGrid();
+    computeNextStates();
+  }
+  
 
   // This is the easy part, just draw the cells, fill 255 for '1', fill 0 for '0'
-  /*void display() {
+  void display(PGraphics g) {
     for ( int i = 0; i < columns;i++) {
       for ( int j = 0; j < rows;j++) {
-        board[i][j].display();
+        board[i][j].display(g);
       }
     }
-  }*/
+  }
 }
 
